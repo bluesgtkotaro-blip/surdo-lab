@@ -1,0 +1,676 @@
+
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#14251e">
+<title>JELLE v0.6</title>
+<style>
+:root{
+ --green:#14251e;--dark:#091710;--brass:#c8a875;
+ --cream:#f5e9cd;--metal:#a8997d;--line:#65583e;
+}
+*{box-sizing:border-box}
+body{
+ margin:0;color:var(--cream);
+ font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;
+ background:#07140f;
+}
+button,select{font:inherit;cursor:pointer}
+button:disabled{opacity:.4;cursor:default}
+.app{
+ max-width:470px;margin:auto;min-height:100dvh;
+ background:linear-gradient(135deg,#27392b,#101e17 40%,#1d3025);
+ padding:env(safe-area-inset-top) 10px env(safe-area-inset-bottom);
+}
+.top{
+ position:relative;min-height:95px;padding:13px 13px 8px;
+ background:radial-gradient(ellipse at 90% 0%,#526b45 0%,transparent 42%),#15261e;
+ border-bottom:1px solid #9e8050;
+}
+.brand-small{font:10px Georgia,serif;letter-spacing:.35em}
+.brand{font:43px Georgia,serif;letter-spacing:.16em;line-height:1.05}
+.subtitle{font:10px Georgia,serif;letter-spacing:.24em}
+.leaf{position:absolute;right:18px;top:18px;font-size:34px;color:#a8b78b}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:10px 0}
+.tabs button{
+ padding:12px;border:1px solid #ac9164;
+ border-radius:6px;background:#10231b;color:#e7d6b5;
+ font:17px Georgia,serif;letter-spacing:.1em;
+}
+.tabs button.active{background:linear-gradient(#e3c99a,#b9965d);color:#18231a;font-weight:bold}
+.panel{
+ background:linear-gradient(135deg,#b4a589,#776e59 48%,#a99a7d);
+ border:2px solid #423e2f;border-radius:11px;
+ box-shadow:inset 0 2px #dfd0ae,inset 0 -2px #4b4434,0 6px 15px #0008;
+ padding:10px;margin-bottom:10px;
+}
+.screw{color:#40372a;font-size:11px}
+.instrument{
+ display:grid;grid-template-columns:108px 1fr;align-items:center;gap:7px;
+ color:#1b251b;font-size:11px;letter-spacing:.08em;
+}
+.instrument select,.mode-select{
+ width:100%;background:#14281e;color:#f2e4c6;
+ border:1px solid #4b3b25;border-radius:6px;
+ padding:11px;font-size:14px;
+}
+.screen{
+ background:linear-gradient(145deg,#1b2e23,#07130f);
+ border:3px solid #56462e;border-radius:9px;
+ box-shadow:inset 0 4px 13px #000c;
+ padding:11px;color:var(--cream);
+}
+.tuner-grid{display:grid;grid-template-columns:minmax(0,1fr) 88px;gap:8px}
+.label{
+ font-size:11px;letter-spacing:.13em;color:#d3bf96;
+ margin-bottom:7px;
+}
+.freq{
+ font-family:Georgia,serif;
+ font-size:clamp(58px,15vw,87px);
+ font-variant-numeric:tabular-nums;
+ letter-spacing:-.06em;white-space:nowrap;line-height:1.1;
+ text-shadow:0 0 14px #f6e4a333;
+}
+.hzunit{font:16px Georgia,serif;letter-spacing:0}
+.leds{display:flex;justify-content:center;gap:18px;margin:12px 0}
+.led{
+ width:20px;height:20px;border-radius:50%;
+ background:#222b22;border:2px solid #776d52;
+ box-shadow:inset 0 3px 5px #000a;
+}
+.led.on{background:#9ce789;box-shadow:0 0 15px #a4f58b}
+.led.amber.on{background:#ffbf55;box-shadow:0 0 15px #ffbf55}
+.led-caption{text-align:center;font-size:10px;letter-spacing:.05em;color:#d3bf96}
+.reel{
+ border:3px solid #6d5937;border-radius:7px;
+ background:#07130f;display:flex;flex-direction:column;
+ justify-content:center;align-items:stretch;
+ overflow:hidden;text-align:center;font-family:Georgia,serif;
+}
+.reel div{padding:10px 0;border-bottom:1px solid #776b4b;font-size:20px}
+.reel .current{
+ background:linear-gradient(#f2dfb7,#cba76c);
+ color:#162119;font-size:29px;font-weight:bold;
+}
+.spectrum-title{font-size:12px;color:#e5d4ad;letter-spacing:.12em;margin-bottom:8px}
+canvas{
+ width:100%;height:135px;display:block;
+ background:#091a12;border:2px solid #6c593b;border-radius:5px;
+}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.big-control{
+ height:83px;border-radius:50%;aspect-ratio:1;
+ border:5px solid #4d422f;
+ box-shadow:0 3px 8px #0008,inset 0 2px 5px #ffffff44;
+ background:radial-gradient(circle at 35% 25%,#435145,#08160f);
+ color:#f4e6c8;font-size:28px;
+}
+.big-control.active{background:radial-gradient(circle,#6bbf61,#1b4924);box-shadow:0 0 14px #7cd36d}
+.control-wrap{text-align:center}
+.control-caption{color:#18251b;font-size:12px;margin-top:5px;letter-spacing:.08em}
+.control-small{display:flex;align-items:center;justify-content:center}
+#reset{
+ background:transparent;color:#392f20;border:0;
+ font-size:11px;padding:3px 7px;float:right;
+}
+.status{font-size:12px;line-height:1.5;color:#e9d5aa;margin-top:8px}
+.hidden{display:none!important}
+.rec-main{text-align:center}
+.step{font-size:11px;letter-spacing:.2em;color:#e4cb9b}
+.step-title{font-size:23px;margin:7px 0 12px}
+.rec-wave{height:105px}
+.progress{display:flex;gap:5px;margin:12px 0}
+.progress i{flex:1;height:8px;border:1px solid #8a7857;border-radius:10px}
+.progress i.on{background:#a5d76e}
+.timer{font:35px Georgia,serif;font-variant-numeric:tabular-nums;margin:10px}
+.rec-buttons{display:flex;justify-content:space-around;align-items:center}
+.round{
+ width:65px;height:65px;border-radius:50%;
+ background:radial-gradient(circle at 35% 25%,#465045,#09120e);
+ color:#e9dec5;border:5px solid #564731;font-size:23px;
+ box-shadow:0 4px 8px #0007;
+}
+.round.record{
+ width:83px;height:83px;
+ background:radial-gradient(circle at 35% 25%,#fa7462,#a41616 70%);
+ box-shadow:0 0 13px #f44336aa,0 4px 8px #0008;
+}
+.round:disabled{opacity:.4}
+.rec-buttons small{display:block;color:#29251d;margin-top:5px}
+.mode-select{margin-top:9px}
+.list-head{display:flex;justify-content:space-between;align-items:center;color:#211d14}
+.record-row{
+ background:#12251c;border:1px solid #7b6949;
+ padding:10px;margin:8px 0;border-radius:6px;
+}
+.record-meta{font-size:12px;color:#e2cba4;line-height:1.6}
+.record-row audio{width:100%;height:35px;margin-top:5px}
+.record-actions{display:flex;gap:7px;margin-top:8px}
+.record-actions button{
+ flex:1;padding:9px 3px;border-radius:5px;
+ border:1px solid #a88b5b;background:#283e2d;color:#f3e6c9;
+ font-size:12px;
+}
+.record-actions .send{background:#b99b67;color:#17241b;font-weight:bold}
+.footer{text-align:center;font:10px Georgia,serif;letter-spacing:.24em;color:#ae9b72;padding:12px}
+@media(max-width:365px){
+ .freq{font-size:57px}
+ .tuner-grid{grid-template-columns:minmax(0,1fr) 73px}
+ .reel div{font-size:17px}
+ .reel .current{font-size:23px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="top">
+<div class="brand-small">KOTARO H.</div>
+<div class="brand">JELLE</div>
+<div class="subtitle">SURDO · PRECISION INSTRUMENT</div>
+<div class="leaf">❧</div>
+</header>
+
+<nav class="tabs">
+<button id="tabT" class="active">TUNER</button>
+<button id="tabR">RECORDER</button>
+</nav>
+
+<div class="panel">
+<div class="instrument">
+<label for="instrument">INSTRUMENT</label>
+<select id="instrument">
+<option value="primeira">SURDO / PRIMEIRA</option>
+<option value="segunda">SURDO / SEGUNDA</option>
+<option value="terceira">SURDO / TERCEIRA</option>
+<option value="pandeiro">PANDEIRO</option>
+</select>
+</div>
+</div>
+
+<div id="tuner">
+<div class="panel">
+<button id="reset">↺ RESET</button>
+<div class="tuner-grid">
+<div class="screen">
+<div class="label">FREQUENCY</div>
+<div class="freq"><span id="hz">—</span><span class="hzunit">Hz</span></div>
+<div class="leds">
+<div id="led0" class="led"></div>
+<div id="led1" class="led amber"></div>
+<div id="led2" class="led"></div>
+</div>
+<div id="stable" class="led-caption">STANDBY / MEASURING</div>
+</div>
+<div class="reel">
+<div id="prevNote">—</div>
+<div id="note" class="current">—</div>
+<div id="nextNote">—</div>
+</div>
+</div>
+</div>
+
+<div class="panel">
+<div class="screen">
+<div class="spectrum-title">SPECTRUM · 20–500 Hz</div>
+<canvas id="spectrum"></canvas>
+</div>
+</div>
+
+<div class="panel">
+<div class="controls">
+<div class="control-wrap">
+<button id="mic" class="big-control">♩</button>
+<div id="micLabel" class="control-caption">MIC OFF</div>
+</div>
+<div class="control-wrap">
+<button id="lock" class="big-control">♙</button>
+<div id="lockLabel" class="control-caption">LOCK</div>
+</div>
+</div>
+<div id="tunerStatus" class="status">マイクは停止中です。</div>
+</div>
+</div>
+
+<div id="recorder" class="hidden">
+<div class="panel">
+<div class="screen rec-main">
+<div id="step" class="step">STEP 1 / 4</div>
+<div id="stepTitle" class="step-title">普通に叩く</div>
+<canvas id="wave" class="rec-wave"></canvas>
+<div class="progress" id="progress">
+<i class="on"></i><i></i><i></i><i></i>
+</div>
+<div class="timer" id="timer">00:00</div>
+<div id="recStatus" class="status">録音待機中</div>
+</div>
+<label style="display:block;color:#241e14;margin-top:12px;font-size:12px">録音モード</label>
+<select id="mode" class="mode-select">
+<option value="normal">通常打撃</option>
+<option value="soft">弱打</option>
+<option value="strong">強打</option>
+<option value="roll">連打</option>
+<option value="free">自由録音</option>
+</select>
+<div style="margin-top:15px" class="rec-buttons">
+<div><button id="stop" class="round" disabled>■</button><small>STOP</small></div>
+<div><button id="rec" class="round record">●</button><small>REC</small></div>
+<div><button id="pause" class="round" disabled>Ⅱ</button><small>PAUSE</small></div>
+</div>
+</div>
+<div class="panel">
+<div class="list-head">
+<strong>録音一覧</strong>
+<span id="count">0 recordings</span>
+</div>
+<div id="recordings"></div>
+<div class="status" style="color:#382e1e">
+SENDでiPhoneの共有メニューを開き、Google Driveの保存先を選択します。
+保存完了はGoogle Drive側で確認してください。
+</div>
+</div>
+</div>
+
+<div class="footer">FIELD INSTRUMENTS · JELLE · KOTARO H.</div>
+</div>
+
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const notes=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
+const configs={
+ primeira:[40,125,.019,1.5],
+ segunda:[45,170,.019,1.7],
+ terceira:[50,210,.017,2],
+ pandeiro:[55,300,.013,3]
+};
+let audioCtx=null,stream=null,source=null,processor=null,gain=null;
+let active=false,locked=false,ring=new Float32Array(131072);
+let write=0,samples=0,prevRms=0,baseline=.002,lastHit=0;
+let hitTimer=null,lastFreq=0,streak=0,latestMag=null,latestRate=48000;
+const N=8192;
+
+function noteName(f){
+ const m=Math.round(69+12*Math.log2(f/440));
+ return {m,name:notes[(m%12+12)%12]+(Math.floor(m/12)-1)};
+}
+function nameAt(m){
+ return notes[(m%12+12)%12]+(Math.floor(m/12)-1);
+}
+function displayFreq(f){
+ if(locked)return;
+ $('hz').textContent=f.toFixed(1);
+ const n=noteName(f);
+ $('note').textContent=n.name;
+ $('prevNote').textContent=nameAt(n.m+1);
+ $('nextNote').textContent=nameAt(n.m-1);
+ for(let i=0;i<3;i++)$('led'+i).classList.toggle('on',i<streak);
+ $('stable').textContent=streak>=3?'● STABLE':'MEASURING';
+}
+function reset(){
+ locked=false;$('lock').classList.remove('active');
+ $('lockLabel').textContent='LOCK';
+ lastFreq=0;streak=0;latestMag=null;
+ $('hz').textContent='—';
+ for(const id of ['note','prevNote','nextNote'])$(id).textContent='—';
+ for(let i=0;i<3;i++)$('led'+i).classList.remove('on');
+ $('stable').textContent='STANDBY / MEASURING';
+ drawSpectrum();
+}
+$('reset').onclick=reset;
+$('lock').onclick=()=>{
+ locked=!locked;
+ $('lock').classList.toggle('active',locked);
+ $('lockLabel').textContent=locked?'UNLOCK':'LOCK';
+};
+$('instrument').onchange=reset;
+
+function fft(re,im){
+ const n=re.length;
+ for(let i=1,j=0;i<n;i++){
+  let b=n>>1;
+  for(;j&b;b>>=1)j^=b;
+  j^=b;
+  if(i<j){
+   [re[i],re[j]]=[re[j],re[i]];
+   [im[i],im[j]]=[im[j],im[i]];
+  }
+ }
+ for(let len=2;len<=n;len<<=1){
+  const a=-2*Math.PI/len;
+  for(let i=0;i<n;i+=len){
+   for(let j=0;j<len/2;j++){
+    const c=Math.cos(a*j),s=Math.sin(a*j);
+    const p=i+j,q=p+len/2;
+    const tr=re[q]*c-im[q]*s,ti=re[q]*s+im[q]*c;
+    re[q]=re[p]-tr;im[q]=im[p]-ti;
+    re[p]+=tr;im[p]+=ti;
+   }
+  }
+ }
+}
+function analyzeHit(){
+ hitTimer=null;
+ if(!active||locked||samples<N)return;
+ const sr=audioCtx.sampleRate;
+ const re=new Float64Array(N),im=new Float64Array(N);
+ for(let i=0;i<N;i++){
+  const v=ring[(write-N+i+ring.length)%ring.length];
+  re[i]=v*(.5-.5*Math.cos(2*Math.PI*i/(N-1)));
+ }
+ fft(re,im);
+ const mag=new Float64Array(N/2);
+ for(let i=0;i<mag.length;i++)mag[i]=Math.hypot(re[i],im[i]);
+ latestMag=mag;latestRate=sr;
+ const [low,high,,match]=configs[$('instrument').value];
+ const lo=Math.max(2,Math.ceil(low*N/sr));
+ const hi=Math.min(mag.length-2,Math.floor(high*N/sr));
+ let peaks=[];
+ for(let i=lo;i<=hi;i++){
+  if(mag[i]>=mag[i-1]&&mag[i]>mag[i+1])peaks.push(i);
+ }
+ peaks.sort((a,b)=>mag[b]-mag[a]);
+ let best=peaks[0];
+ if(best===undefined)return;
+ if(lastFreq){
+  const near=peaks.find(i=>Math.abs(i*sr/N-lastFreq)<=Math.max(5,match*2));
+  if(near&&mag[near]>=mag[best]*.48)best=near;
+ }
+ const a=Math.log(mag[best-1]+1e-12);
+ const b=Math.log(mag[best]+1e-12);
+ const c=Math.log(mag[best+1]+1e-12);
+ const den=a-2*b+c;
+ const delta=Math.abs(den)>1e-9?
+  Math.max(-.5,Math.min(.5,.5*(a-c)/den)):0;
+ const freq=(best+delta)*sr/N;
+ if(freq<low||freq>high)return;
+ streak=lastFreq&&Math.abs(freq-lastFreq)<=match?
+  Math.min(3,streak+1):1;
+ lastFreq=freq;
+ displayFreq(freq);
+ drawSpectrum();
+}
+function drawSpectrum(){
+ const canvas=$('spectrum'),w=canvas.clientWidth||320,h=135;
+ const dpr=window.devicePixelRatio||1;
+ canvas.width=Math.round(w*dpr);
+ canvas.height=Math.round(h*dpr);
+ const g=canvas.getContext('2d');
+ g.scale(dpr,dpr);
+ g.fillStyle='#091a12';g.fillRect(0,0,w,h);
+ g.strokeStyle='#294638';
+ for(let i=1;i<5;i++){
+  g.beginPath();g.moveTo(0,i*h/5);g.lineTo(w,i*h/5);g.stroke();
+ }
+ const mag=latestMag,sr=latestRate;
+ let max=1e-9;
+ if(mag){
+  for(let i=0;i<mag.length;i++){
+   const f=i*sr/N;
+   if(f>=20&&f<=500)max=Math.max(max,mag[i]);
+  }
+ }
+ g.strokeStyle='#e3bd77';g.lineWidth=1.5;g.beginPath();
+ for(let x=0;x<w;x++){
+  const f=20+480*x/w;
+  const i=Math.round(f*N/sr);
+  const v=mag?Math.sqrt((mag[i]||0)/max):0;
+  const y=h-20-v*(h-34);
+  if(x===0)g.moveTo(x,y);else g.lineTo(x,y);
+ }
+ g.stroke();
+ g.fillStyle='#c8b68e';g.font='10px sans-serif';
+ for(const f of [20,100,200,300,400,500]){
+  const x=(f-20)/480*w;
+  g.fillText(String(f),Math.min(w-25,x+2),h-5);
+ }
+}
+async function startMic(){
+ try{
+  stream=await navigator.mediaDevices.getUserMedia({
+   audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}
+  });
+  audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+  await audioCtx.resume();
+  source=audioCtx.createMediaStreamSource(stream);
+  processor=audioCtx.createScriptProcessor(1024,1,1);
+  gain=audioCtx.createGain();gain.gain.value=0;
+  source.connect(processor);processor.connect(gain);
+  gain.connect(audioCtx.destination);
+  active=true;reset();
+  processor.onaudioprocess=e=>{
+   if(!active)return;
+   const data=e.inputBuffer.getChannelData(0);
+   let sum=0;
+   for(const v of data){
+    ring[write]=v;write=(write+1)%ring.length;sum+=v*v;
+   }
+   samples+=data.length;
+   const rms=Math.sqrt(sum/data.length);
+   const [,,gate]=configs[$('instrument').value];
+   const now=performance.now();
+   if(!locked&&samples>N&&!hitTimer&&
+      rms>Math.max(gate,baseline*4.2)&&
+      rms>Math.max(prevRms*1.65,gate*.9)&&
+      now-lastHit>320){
+    lastHit=now;
+    hitTimer=setTimeout(analyzeHit,Math.max(100,Math.round(N/audioCtx.sampleRate*1000)));
+   }
+   if(!hitTimer)baseline=baseline*.997+rms*.003;
+   prevRms=prevRms*.68+rms*.32;
+  };
+  $('mic').classList.add('active');
+  $('micLabel').textContent='MIC ON';
+  $('tunerStatus').textContent='測定中。1打ずつ叩いてください。';
+ }catch(e){
+  $('tunerStatus').textContent='マイク開始失敗: '+e.message;
+  await stopMic();
+ }
+}
+async function stopMic(){
+ active=false;
+ clearTimeout(hitTimer);hitTimer=null;
+ if(processor){processor.disconnect();processor.onaudioprocess=null;processor=null;}
+ if(source){source.disconnect();source=null;}
+ if(gain){gain.disconnect();gain=null;}
+ if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
+ if(audioCtx){await audioCtx.close().catch(()=>{});audioCtx=null;}
+ $('mic').classList.remove('active');
+ $('micLabel').textContent='MIC OFF';
+ $('tunerStatus').textContent='マイクは停止中です。';
+}
+$('mic').onclick=()=>active?stopMic():startMic();
+
+$('tabT').onclick=()=>{
+ $('tuner').classList.remove('hidden');
+ $('recorder').classList.add('hidden');
+ $('tabT').classList.add('active');$('tabR').classList.remove('active');
+};
+$('tabR').onclick=()=>{
+ $('recorder').classList.remove('hidden');
+ $('tuner').classList.add('hidden');
+ $('tabR').classList.add('active');$('tabT').classList.remove('active');
+};
+
+const DB='jelle-v06-recordings',STORE='recordings';
+let dbPromise;
+function openDB(){
+ if(!dbPromise)dbPromise=new Promise((resolve,reject)=>{
+  const r=indexedDB.open(DB,1);
+  r.onupgradeneeded=()=>r.result.createObjectStore(STORE,{keyPath:'id'});
+  r.onsuccess=()=>resolve(r.result);
+  r.onerror=()=>reject(r.error);
+ });
+ return dbPromise;
+}
+async function saveItem(item){
+ const db=await openDB();
+ return new Promise((resolve,reject)=>{
+  const tx=db.transaction(STORE,'readwrite');
+  tx.objectStore(STORE).put(item);
+  tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);
+ });
+}
+async function allItems(){
+ const db=await openDB();
+ return new Promise((resolve,reject)=>{
+  const r=db.transaction(STORE,'readonly').objectStore(STORE).getAll();
+  r.onsuccess=()=>resolve(r.result.sort((a,b)=>b.created-a.created));
+  r.onerror=()=>reject(r.error);
+ });
+}
+async function removeItem(id){
+ const db=await openDB();
+ return new Promise((resolve,reject)=>{
+  const tx=db.transaction(STORE,'readwrite');
+  tx.objectStore(STORE).delete(id);
+  tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);
+ });
+}
+
+let recStream=null,recorder=null,chunks=[],started=0,clock=null;
+let pausedMs=0,pauseStarted=0;
+let recUrlList=[];
+function elapsed(){
+ return Math.max(0,Date.now()-started-pausedMs-
+  (pauseStarted?Date.now()-pauseStarted:0));
+}
+function showTime(){
+ const s=Math.floor(elapsed()/1000);
+ $('timer').textContent=String(Math.floor(s/60)).padStart(2,'0')+
+  ':'+String(s%60).padStart(2,'0');
+}
+function setRecUI(on){
+ $('rec').disabled=on;$('stop').disabled=!on;
+ $('pause').disabled=!on;
+}
+$('rec').onclick=async()=>{
+ try{
+  if(!window.MediaRecorder)throw Error('録音非対応ブラウザです');
+  if(active)await stopMic();
+  recStream=await navigator.mediaDevices.getUserMedia({
+   audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}
+  });
+  const mime=['audio/mp4','audio/webm;codecs=opus','audio/webm']
+   .find(x=>MediaRecorder.isTypeSupported(x));
+  recorder=new MediaRecorder(recStream,mime?{mimeType:mime}:{});
+  chunks=[];started=Date.now();pausedMs=0;pauseStarted=0;
+  const instrument=$('instrument').value,mode=$('mode').value;
+  const thisRecorder=recorder;
+  const thisStream=recStream;
+  recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
+  recorder.onstop=async()=>{
+   clearInterval(clock);
+   thisStream.getTracks().forEach(t=>t.stop());
+   const blob=new Blob(chunks,{type:thisRecorder.mimeType});
+   if(!blob.size){$('recStatus').textContent='録音が空です';return;}
+   const item={
+    id:'jelle-'+started+'-'+Math.random().toString(36).slice(2),
+    created:started,duration:elapsed()/1000,
+    instrument,mode,mime:blob.type,blob,size:blob.size
+   };
+   try{
+    await saveItem(item);
+    $('recStatus').textContent='端末内に保存しました';
+    await renderItems();
+   }catch(e){$('recStatus').textContent='保存失敗: '+e.message;}
+  };
+  recorder.start(1000);
+  setRecUI(true);
+  $('recStatus').textContent='● 録音中';
+  clock=setInterval(showTime,200);
+ }catch(e){
+  $('recStatus').textContent='録音開始失敗: '+e.message;
+  recStream?.getTracks().forEach(t=>t.stop());
+ }
+};
+$('stop').onclick=()=>{
+ if(recorder&&recorder.state!=='inactive'){
+  if(pauseStarted){pausedMs+=Date.now()-pauseStarted;pauseStarted=0;}
+  recorder.stop();setRecUI(false);
+  $('recStatus').textContent='保存処理中…';
+ }
+};
+$('pause').onclick=()=>{
+ if(!recorder)return;
+ if(recorder.state==='recording'){
+  recorder.pause();pauseStarted=Date.now();
+  $('pause').textContent='▶';$('recStatus').textContent='一時停止中';
+ }else if(recorder.state==='paused'){
+  recorder.resume();pausedMs+=Date.now()-pauseStarted;
+  pauseStarted=0;$('pause').textContent='Ⅱ';
+  $('recStatus').textContent='● 録音中';
+ }
+};
+$('mode').onchange=()=>{
+ const modes=['normal','soft','strong','roll'];
+ const i=modes.indexOf($('mode').value);
+ $('step').textContent=i<0?'FREE RECORDING':'STEP '+(i+1)+' / 4';
+ $('stepTitle').textContent={
+  normal:'普通に叩く',soft:'弱く叩く',strong:'強く叩く',
+  roll:'連続して叩く',free:'自由録音'
+ }[$('mode').value];
+ [...$('progress').children].forEach((e,j)=>e.classList.toggle('on',j===i));
+};
+
+function makeFile(it){
+ const ext=it.mime.includes('mp4')?'m4a':
+  it.mime.includes('webm')?'webm':'bin';
+ const name='JELLE_'+it.instrument+'_'+it.mode+'_'+
+  new Date(it.created).toISOString().replace(/[:.]/g,'-')+'.'+ext;
+ return new File([it.blob],name,{type:it.mime});
+}
+function downloadFile(file){
+ const u=URL.createObjectURL(file);
+ const a=document.createElement('a');a.href=u;a.download=file.name;
+ document.body.appendChild(a);a.click();a.remove();
+ setTimeout(()=>URL.revokeObjectURL(u),30000);
+}
+async function renderItems(){
+ for(const u of recUrlList)URL.revokeObjectURL(u);
+ recUrlList=[];
+ const list=await allItems();
+ $('count').textContent=list.length+' recordings';
+ const root=$('recordings');root.replaceChildren();
+ if(!list.length){root.textContent='まだ録音がありません。';return;}
+ for(const it of list){
+  const row=document.createElement('div');row.className='record-row';
+  const meta=document.createElement('div');meta.className='record-meta';
+  meta.textContent=new Date(it.created).toLocaleString('ja-JP')+
+   ' · '+it.instrument+' · '+it.mode+' · '+it.duration.toFixed(1)+'秒';
+  const player=document.createElement('audio');player.controls=true;
+  const u=URL.createObjectURL(it.blob);recUrlList.push(u);player.src=u;
+  const actions=document.createElement('div');actions.className='record-actions';
+  const send=document.createElement('button');send.className='send';
+  send.textContent='SEND';
+  send.onclick=async()=>{
+   if(!confirm('この録音を共有しますか？'))return;
+   const file=makeFile(it);
+   try{
+    if(!navigator.share||!navigator.canShare?.({files:[file]})){
+     alert('共有非対応です。「保存」を使用してください。');return;
+    }
+    await navigator.share({files:[file],title:'JELLE 録音'});
+    alert('Google Driveに保存されたか確認してください。');
+   }catch(e){
+    if(e.name!=='AbortError')alert('共有失敗: '+e.message);
+   }
+  };
+  const save=document.createElement('button');save.textContent='保存';
+  save.onclick=()=>downloadFile(makeFile(it));
+  const del=document.createElement('button');del.textContent='削除';
+  del.onclick=async()=>{
+   if(!confirm('この録音を削除しますか？'))return;
+   await removeItem(it.id);await renderItems();
+  };
+  actions.append(send,save,del);
+  row.append(meta,player,actions);root.append(row);
+ }
+}
+drawSpectrum();
+renderItems().catch(e=>$('recStatus').textContent='保存領域エラー: '+e.message);
+</script>
+</body>
+</html>
