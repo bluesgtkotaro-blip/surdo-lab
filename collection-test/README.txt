@@ -1,0 +1,1 @@
+Surdo Lab v0.3 集音テスト版。GitHub surdo-lab リポジトリの collection-test フォルダに index.html, sw.js, manifest.webmanifest, icon.svg, icon-180.png, icon-192.png, icon-512.png をアップロード。URL: https://bluesgtkotaro-blip.github.io/surdo-lab/collection-test/ 。録音は端末内IndexedDBに保存。直接GitHub送信はなし。
