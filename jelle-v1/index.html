@@ -366,8 +366,28 @@ function spectrum(){
           if(score>bestScore){bestScore=score;best=lag}
         }
       }
+      // PRIMEIRA: shallow-shell recordings reveal octave/subharmonic ambiguity.
+      // Use the supported central resonance region as a candidate, not a fixed pitch correction.
+      // Other instruments retain the existing estimator unchanged.
+      let estimatedHz=best?sr/best:0;
+      if($('instrument').value==='PRIMEIRA'){
+        let pBest=0,pScore=0;
+        const pMin=Math.max(min,Math.ceil(sr/105));
+        const pMax=Math.min(max,Math.floor(sr/55));
+        if(rms>.009){
+          for(let lag=pMin;lag<=pMax;lag++){
+            let sum=0,a=0,b=0;
+            for(let i=0;i<td.length-lag;i+=3){sum+=td[i]*td[i+lag];a+=td[i]*td[i];b+=td[i+lag]*td[i+lag]}
+            const score=sum/Math.sqrt(a*b+1e-12);
+            if(score>pScore){pScore=score;pBest=lag}
+          }
+        }
+        // If no reliable candidate exists, reject the strike rather than report
+        // a 1/2x or 2x pitch. Never multiply the displayed frequency by a constant.
+        best=pBest;bestScore=pScore;estimatedHz=pBest?sr/pBest:0;
+      }
       if(best && bestScore>.74){
-        const hz=sr/best;
+        const hz=estimatedHz;
         setNote(hz);
         registerStrikePitch(hz);
       }else{
