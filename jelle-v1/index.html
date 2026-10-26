@@ -418,7 +418,45 @@ function renderDetail(){let html=records.map(r=>`<button class="detail-row ${r.i
 async function drawDetailWave(r){let c=$('detailWave'),rect=c.getBoundingClientRect();if(!rect.width)return;c.width=rect.width*devicePixelRatio;c.height=rect.height*devicePixelRatio;let ctx=c.getContext('2d');ctx.fillStyle='#e6d7b5';ctx.fillRect(0,0,c.width,c.height);if(!r)return;try{let ab=await r.blob.arrayBuffer(),ac=new (window.AudioContext||window.webkitAudioContext)(),buf=await ac.decodeAudioData(ab),samples=buf.getChannelData(0);ctx.strokeStyle='#15291f';for(let x=0;x<c.width;x++){let i=Math.floor(x*samples.length/c.width),end=Math.min(samples.length,i+Math.ceil(samples.length/c.width)),v=0;for(let j=i;j<end;j+=Math.max(1,Math.floor((end-i)/15)))v=Math.max(v,Math.abs(samples[j]));ctx.beginPath();ctx.moveTo(x,c.height*(.5-v*.46));ctx.lineTo(x,c.height*(.5+v*.46));ctx.stroke()}ac.close()}catch(e){msg('波形を表示できません: '+e.message)}}
 let playerUrl=null;function playSelected(){let r=records.find(x=>x.id===selected);if(!r){msg('録音を選択してください');return}if(!player.paused){player.pause();return}if(playerUrl)URL.revokeObjectURL(playerUrl);playerUrl=URL.createObjectURL(r.blob);player.src=playerUrl;player.play().catch(e=>msg('再生できません: '+e.message))}
 function saveSelected(){let r=records.find(x=>x.id===selected);if(!r){msg('録音を選択してください');return}let url=URL.createObjectURL(r.blob),a=document.createElement('a');a.href=url;a.download=r.name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000)}
-async function shareSelected(){let r=records.find(x=>x.id===selected);if(!r){msg('録音を選択してください');return}let f=new File([r.blob],r.name,{type:r.blob.type});try{if(navigator.canShare?.({files:[f]})){await navigator.share({files:[f],title:r.name});msg('共有画面から送信先の保存状況を確認してください')}else{saveSelected();msg('共有に非対応のためファイル保存を開始しました')}}catch(e){if(e.name!=='AbortError')msg('共有に失敗: '+e.message)}}
+// Owner configuration: paste the deployed Apps Script Web App /exec URL here.
+const JELLE_UPLOAD_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwvmrZmPqN3KYxOH9eiKuKj9_qnnNInBsJTLplAoAspgbZ9T37FAIygckcUn6DqKgFS/exec';
+const JELLE_MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
+function jelleUploadPage(){
+  return window.open('', '_blank');
+}
+async function shareSelected(){
+  const r=records.find(x=>x.id===selected);
+  if(!r){msg('録音を選択してください');return}
+  const endpoint=JELLE_UPLOAD_ENDPOINT.trim();
+  if(!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(endpoint)){
+    msg('SEND未設定：管理者が送信先URLを設定してください');return;
+  }
+  if(!r.blob || !r.blob.size){msg('録音ファイルが空です');return}
+  if(r.blob.size>JELLE_MAX_UPLOAD_BYTES){msg('録音が8MBを超えています。短く録音してください');return}
+  // Opening a visible result tab is intentional: cross-origin Apps Script cannot
+  // reliably acknowledge completion to a static GitHub Pages site via fetch/CORS.
+  const resultWindow=jelleUploadPage();
+  if(!resultWindow){msg('ポップアップを許可してからSENDを押してください');return}
+  resultWindow.document.write('<!doctype html><html lang="ja"><meta charset="utf-8"><title>JELLE SEND</title><body style="font:18px sans-serif;padding:28px">JELLE: 録音を準備しています…</body></html>');
+  try{
+    const bytes=new Uint8Array(await r.blob.arrayBuffer());
+    let binary='';
+    for(let i=0;i<bytes.length;i+=16384){binary+=String.fromCharCode(...bytes.subarray(i,i+16384))}
+    const encoded=btoa(binary);
+    const form=document.createElement('form');
+    form.method='POST';form.action=endpoint;form.target=resultWindow.name || 'jelleUploadResult';
+    // Use a stable explicit window name for a cross-origin POST target.
+    resultWindow.name='jelleUploadResult';form.target='jelleUploadResult';
+    const fields={fileName:r.name||'jelle-recording',mimeType:r.blob.type||'application/octet-stream',fileData:encoded,source:'JELLE-v1.0'};
+    for(const [key,value] of Object.entries(fields)){
+      const field=document.createElement('input');field.type='hidden';field.name=key;field.value=value;form.append(field);
+    }
+    document.body.append(form);
+    resultWindow.document.body.textContent='JELLE: Googleドライブへ送信中… 結果が表示されるまで閉じないでください。';
+    form.submit();form.remove();
+    msg('送信処理を開始しました。開いた画面で結果を確認してください');
+  }catch(e){resultWindow.close();msg('送信の準備に失敗: '+e.message)}
+}
 window.addEventListener('load',()=>spectrumPlot(null));window.addEventListener('resize',()=>{if(!micStream)spectrumPlot(null)});$('tabT').onclick=()=>setView('tuner');$('tabR').onclick=()=>setView('recorder');$('reset').onclick=()=>{reset();const el=$('reset');el.animate([{transform:'rotate(0deg)'},{transform:'rotate(-360deg)'}],{duration:420});msg('測定値をリセットしました')};$('mic').onclick=toggleMic;$('lock').onclick=toggleLock;$('recButton').onclick=toggleRec;$('recPrev').onclick=()=>{if(recState!=='idle'){msg('先に録音を停止してください');return}recStep=(recStep-1+steps.length)%steps.length;updateStep()};$('instrument').addEventListener('change',()=>updateStep());$('recNext').onclick=()=>{if(recState!=='idle'){msg('先に録音を停止してください');return}recStep=(recStep+1)%steps.length;updateStep()};$('recMore').onclick=()=>setView('detail');$('back').onclick=()=>setView('recorder');$('recPlay').onclick=playSelected;$('recSend').onclick=shareSelected;$('detailPlay').onclick=playSelected;$('detailSave').onclick=saveSelected;$('detailShare').onclick=shareSelected;$('detailDelete').onclick=deleteSelected;$('guided').onclick=()=>{guided=true;updateStep();$('guided').classList.add('selected');$('manual').classList.remove('selected')};$('manual').onclick=()=>{guided=false;updateStep();$('manual').classList.add('selected');$('guided').classList.remove('selected')};$('seek').oninput=e=>{if(player.duration)player.currentTime=player.duration*Number(e.target.value)/100};player.ontimeupdate=()=>{if(player.duration){$('seek').value=100*player.currentTime/player.duration;$('detailTime').textContent=fmt(player.currentTime)+' / '+fmt(player.duration)}};$('instrument').onchange=()=>{if(!locked)reset()};window.addEventListener('pagehide',()=>{stopMic();if(recStream)recStream.getTracks().forEach(t=>t.stop())});setView('tuner');reset();updateStep();loadRecords();
 </script><script>
 window.addEventListener('error',function(e){let n=document.getElementById('notice');if(n){n.textContent='操作エラー: '+(e.message||'不明');n.classList.add('show')} });
